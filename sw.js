@@ -1,62 +1,63 @@
-const APP_NAME = "jewellery-xrf-pwa"; // Aapki app se related naam rakha hai
-const VERSION = "v1.0"; // Hamesha static number use karein. Update aane par "v1.1" kar dein.
-const CACHE_NAME = APP_NAME + "-" + VERSION;
+const CACHE_NAME = 'wealthflow-pro-v1';
 
-const URLS_TO_CACHE = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/icon-192.png",
-  "/icon-512.png"
+// 1. Files to save immediately (Local files)
+const STATIC_ASSETS = [
+    './',
+    './index.html',
+    './app.js',
+    './manifest.json',
+    './icons/icon-192x192.png',
+    './icons/icon-512x512.png'
 ];
 
-// Install Event
-self.addEventListener("install", event => {
-  self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      console.log("Caching App Shell...");
-      return cache.addAll(URLS_TO_CACHE);
-    })
-  );
-});
-
-// Activate Event (Delete ALL old caches of this app)
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cache => {
-          // Agar cache ka naam current cache jaisa nahi hai, toh delete kar do
-          if (cache !== CACHE_NAME) {
-            console.log("Deleting old cache:", cache);
-            return caches.delete(cache);
-          }
+// Step 1: App Install hote hi in files ko offline memory me daal do
+self.addEventListener('install', (event) => {
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => {
+            console.log('App Core Cached Successfully!');
+            return cache.addAll(STATIC_ASSETS);
         })
-      );
-    })
-  );
-  self.clients.claim();
+    );
+    self.skipWaiting();
 });
 
-// Fetch Event (Network First, fallback to Cache)
-self.addEventListener("fetch", event => {
-  // Ignore non-GET requests (like POST)
-  if (event.request.method !== 'GET') return;
+// Step 2: Purane kachre (Old caches) ko delete karo jab naya update aaye
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((name) => {
+                    if (name !== CACHE_NAME) {
+                        return caches.delete(name);
+                    }
+                })
+            );
+        })
+    );
+    self.clients.claim();
+});
 
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Network se data aane par cache update kar lo
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseClone);
-        });
-        return response;
-      })
-      .catch(() => {
-        // Agar internet nahi hai, toh cache se file de do
-        return caches.match(event.request);
-      })
-  );
+// Step 3: THE OFFLINE SERVER ENGINE (Smart Fetch)
+self.addEventListener('fetch', (event) => {
+    // Sirf 'GET' requests ko intercept karo
+    if (event.request.method !== 'GET') return;
+
+    event.respondWith(
+        fetch(event.request)
+            .then((networkResponse) => {
+                // Agar internet chal raha hai, toh latest file download karo
+                // Aur sath hi use chupke se Cache me save (Clone) kar lo agle offline use ke liye
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache);
+                    });
+                }
+                return networkResponse;
+            })
+            .catch(() => {
+                // 🚨 Agar INTERNET BAND HAI, toh crash hone ke bajaye Cache se file nikal kar de do!
+                return caches.match(event.request);
+            })
+    );
 });
