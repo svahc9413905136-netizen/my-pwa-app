@@ -2,1247 +2,253 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jewellery XRF Certificate Designer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WealthFlow Ultra | Drive Sync Edition</title>
     
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#ffffff">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="CardPresso">
-    
+    <link rel="icon" type="image/png" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <meta name="theme-color" content="#111827">
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- GOOGLE IDENTITY SERVICES (For Drive Sync) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        
-        #workspace {
-            background-color: #e5e7eb;
-            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-
-        #card {
-            background: white;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        
-        .canvas-element {
-            position: absolute;
-            border: 2px dashed transparent;
-            touch-action: none;
-            user-select: none;
-            cursor: grab;
-            box-sizing: border-box;
-            will-change: top, left, width, height; 
-        }
-        
-        .canvas-element:hover { border-color: #93c5fd; }
-        .canvas-element.active-element {
-            border-color: #3b82f6;
-            z-index: 50;
-        }
-        
-        .canvas-element.active-element::after {
-            content: '';
-            position: absolute;
-            bottom: -6px;
-            right: -6px;
-            width: 12px;
-            height: 12px;
-            background-color: #3b82f6;
-            border: 2px solid #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            pointer-events: none;
-        }
-
-        .canvas-element:active { cursor: grabbing; }
-        
-        .exporting .canvas-element { border-color: transparent !important; }
-        .exporting .canvas-element::after { display: none !important; }
-        #card.exporting { box-shadow: none !important; border: none !important; background-color: #ffffff !important; }
-
-        input[type="color"] {
-            -webkit-appearance: none;
-            border: 1px solid #d1d5db;
-            width: 100%;
-            height: 36px;
-            border-radius: 6px;
-            cursor: pointer;
-            padding: 2px;
-            background: white;
-        }
-        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
-        
-        #qrcode canvas, #qrcode img {
-            width: 100% !important;
-            height: 100% !important;
-            display: block;
-        }
-
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body::-webkit-scrollbar { display: none; }
+        .translate-y-full { transform: translateY(100%); }
+        .translate-y-0 { transform: translateY(0); }
+        * { -webkit-tap-highlight-color: transparent; }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-10px);} 75% {transform: translateX(10px);} }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col h-screen overflow-hidden">
+<body class="bg-gray-900 text-gray-100 font-sans pb-28 antialiased">
 
-    <header class="bg-white border-b shadow-sm z-50 flex-shrink-0">
-        <div class="max-w-screen-2xl mx-auto px-2 lg:px-4 py-2 flex flex-col lg:flex-row items-center justify-between gap-2">
-            <div class="w-full lg:w-auto flex justify-between items-center px-2">
-                <div>
-                    <h1 class="text-xl lg:text-2xl font-bold text-gray-800 leading-tight" style="font-family: 'Playfair Display', serif;">CardPresso Web</h1>
-                    <p class="text-[10px] lg:text-xs text-gray-500">Advanced ID & Certificate Designer</p>
+    <!-- 🔒 STRONG PASSWORD SCREEN (Same as before) -->
+    <div id="pin-screen" class="fixed inset-0 bg-gray-900 z-[100] flex flex-col justify-center items-center p-6">
+        <div id="pin-box" class="bg-gray-800 p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm border border-gray-700 text-center transition-all">
+            <div id="pin-main-view">
+                <i id="lock-icon" class="ph-fill ph-shield-check text-6xl text-emerald-400 mb-4 inline-block"></i>
+                <h2 id="pin-title" class="text-2xl font-bold text-white mb-2">सुरक्षित लॉगिन</h2>
+                <p id="pin-desc" class="text-xs text-gray-400 mb-6">अपना मास्टर पासवर्ड दर्ज करें</p>
+                <p id="lockout-timer" class="text-red-400 font-bold text-sm mb-4 hidden"></p>
+
+                <div id="setup-extras" class="hidden mb-6 text-left bg-gray-900 p-5 rounded-2xl border border-gray-700">
+                    <label class="text-[10px] uppercase tracking-widest text-emerald-500 font-bold block mb-3">रिकवरी सेटअप</label>
+                    <input type="text" id="security-q" placeholder="आपका गुप्त सवाल (उदा: दोस्त का नाम)?" class="w-full bg-gray-800 text-sm text-white px-4 py-3 rounded-xl border border-gray-600 mb-3 outline-none focus:border-emerald-500">
+                    <input type="text" id="security-a" placeholder="जवाब लिखें..." class="w-full bg-gray-800 text-sm text-white px-4 py-3 rounded-xl border border-gray-600 outline-none focus:border-emerald-500">
                 </div>
+
+                <div class="mb-6">
+                    <input type="password" id="pin-input" class="w-full bg-gray-900 text-center text-xl font-bold text-white px-4 py-4 rounded-2xl border border-gray-700 focus:border-emerald-500 outline-none tracking-widest" placeholder="PASSWORD">
+                </div>
+                
+                <button id="pin-action-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-extrabold py-4 rounded-xl transition shadow-lg shadow-emerald-500/20">लॉगिन / सेटअप</button>
+                <button id="forgot-pin-btn" class="mt-5 text-xs text-blue-400 underline hidden">पासवर्ड भूल गए?</button>
             </div>
+
+            <div id="recovery-view" class="hidden text-left">
+                <button id="back-to-pin-btn" class="text-gray-400 mb-4 text-xs hover:text-white"><i class="ph ph-arrow-left"></i> वापस</button>
+                <h3 class="text-xl font-bold text-white mb-4">रिकवरी</h3>
+                <p class="text-xs text-gray-400 mb-1">गुप्त सवाल:</p>
+                <p id="recover-q-text" class="text-sm font-medium text-blue-300 mb-4 bg-blue-900/20 p-3 rounded-lg border border-blue-800/30"></p>
+                <input type="text" id="recover-a" placeholder="जवाब लिखें..." class="w-full bg-gray-900 text-sm text-white px-4 py-3 rounded-xl border border-gray-700 outline-none mb-6 focus:border-blue-500">
+                <button id="verify-recover-btn" class="w-full bg-blue-500 hover:bg-blue-400 text-white font-extrabold py-4 rounded-xl shadow-lg">पासवर्ड दिखाएँ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📱 HEADER -->
+    <header class="pt-8 pb-8 px-6 bg-gray-800 rounded-b-[2.5rem] shadow-2xl relative z-10">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <h1 class="text-2xl font-extrabold tracking-wide text-white">Cashflow<span class="text-emerald-400">Ultra</span></h1>
+                <p id="storage-status" class="text-[10px] text-gray-500 mt-1 font-bold">🔒 DATA: LOCAL & OFFLINE</p>
+                <p id="sync-status" class="text-[10px] text-blue-400 mt-0.5 font-bold hidden">☁️ CONNECTED TO DRIVE</p>
+            </div>
+            <!-- GOOGLE SIGN IN BUTTON -->
+            <button id="google-login-btn" class="bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded-xl text-white text-xs font-bold transition flex items-center shadow-lg shadow-blue-500/30">
+                <i class="ph-fill ph-google-logo mr-1 text-lg"></i> Drive Sync
+            </button>
+        </div>
+        
+        <div class="flex flex-wrap gap-2 mb-6">
+            <button id="advisor-btn" class="flex items-center space-x-1 text-purple-400 bg-purple-900/30 px-3 py-2 rounded-xl text-xs font-bold animate-pulse"><i class="ph-fill ph-robot text-lg"></i> <span>AI</span></button>
+            <!-- NEW DRIVE SYNC BUTTONS -->
+            <button id="drive-backup-btn" class="flex items-center space-x-1 text-emerald-400 bg-emerald-900/30 px-3 py-2 rounded-xl text-xs font-bold hidden"><i class="ph ph-cloud-arrow-up text-lg"></i> <span>Save to Drive</span></button>
+            <button id="drive-restore-btn" class="flex items-center space-x-1 text-orange-400 bg-orange-900/30 px-3 py-2 rounded-xl text-xs font-bold hidden"><i class="ph ph-cloud-arrow-down text-lg"></i> <span>Restore</span></button>
             
-            <div class="w-full overflow-x-auto pb-1 hide-scrollbar">
-                <div class="flex items-center gap-2 min-w-max px-2">
-                    <div class="flex bg-amber-50 p-1 rounded-md border border-amber-200 shadow-sm">
-                        <button onclick="saveProjectFile()" class="px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-bold text-amber-700 hover:bg-white rounded transition" title="Save Project to edit later">💾 Save Project</button>
-                        <button onclick="document.getElementById('openProjectInput').click()" class="px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-bold text-amber-700 hover:bg-white rounded transition border-l border-amber-200 ml-1" title="Open saved Project">📂 Open Project</button>
-                        <input type="file" id="openProjectInput" accept=".json" class="hidden" onchange="loadProjectFile(this)">
-                    </div>
+            <button id="reset-app-btn" class="flex items-center space-x-1 text-red-400 bg-red-900/30 px-3 py-2 rounded-xl text-xs font-bold"><i class="ph ph-trash text-lg"></i></button>
+        </div>
+        
+        <!-- Filter Navigation -->
+        <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-2xl border border-gray-700/50 mb-4 shadow-inner">
+            <button id="prev-month-btn" class="text-gray-400 p-1 hover:text-white transition"><i class="ph-fill ph-caret-left text-xl"></i></button>
+            <h3 id="current-month-display" class="text-white font-bold text-xs tracking-wide text-center flex-1"></h3>
+            <button id="custom-range-open-btn" class="text-emerald-400 p-1 mx-2 hover:text-emerald-300 transition"><i class="ph-fill ph-calendar-blank text-xl"></i></button>
+            <button id="next-month-btn" class="text-gray-400 p-1 hover:text-white transition"><i class="ph-fill ph-caret-right text-xl"></i></button>
+        </div>
 
-                    <div class="flex bg-gray-100 p-1 rounded-md border border-gray-200">
-                        <button onclick="addNewText()" class="px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-semibold text-gray-700 hover:bg-white rounded shadow-sm transition">📝 Text</button>
-                        <button onclick="document.getElementById('uploadImgInput').click()" class="px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-semibold text-gray-700 hover:bg-white rounded shadow-sm transition">🖼️ Image</button>
-                        <input type="file" id="uploadImgInput" accept="image/*" class="hidden" onchange="addNewImage(this)">
-                        <button onclick="handleCameraClick('new')" class="px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-semibold text-blue-600 hover:bg-white rounded shadow-sm transition border-l ml-1">📸 Camera</button>
-                        <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="addNewImage(this)">
-                        <input type="file" id="replaceImgCameraInput" accept="image/*" capture="environment" class="hidden">
-                    </div>
-
-                    <div class="flex bg-gray-100 p-1 rounded-md border border-gray-200">
-                        <button onclick="undo()" class="px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-semibold text-gray-700 hover:bg-white rounded shadow-sm transition" title="Undo (Ctrl+Z)">↩️</button>
-                        <button onclick="redo()" class="px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-semibold text-gray-700 hover:bg-white rounded shadow-sm transition border-l ml-1" title="Redo (Ctrl+Y)">↪️</button>
-                    </div>
-
-                    <div class="flex bg-gray-100 p-1 rounded-md border border-gray-200">
-                        <button onclick="pasteElement()" class="px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-semibold text-gray-700 hover:bg-white rounded shadow-sm transition" title="Paste (Ctrl+V)">📋 Paste</button>
-                        <button onclick="toggleOrientation()" class="px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-semibold text-gray-700 hover:bg-white rounded shadow-sm transition border-l ml-1">🔄 Flip Card</button>
-                    </div>
-
-                    <div class="flex gap-1 lg:gap-2">
-                        <button onclick="saveImage('png')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md text-xs lg:text-sm font-bold shadow transition">PNG</button>
-                        <button onclick="saveImage('jpeg')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md text-xs lg:text-sm font-bold shadow transition">JPG</button>
-                        <button onclick="shareCard()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md text-xs lg:text-sm font-bold shadow transition flex items-center gap-1">
-                            <svg class="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-5.368m0 5.368l5.657 5.657m-5.657-5.657l5.657-5.657"></path></svg> Share
-                        </button>
-                    </div>
-                </div>
+        <!-- LIFETIME NET WORTH & WALLETS -->
+        <div class="bg-gray-900/50 p-5 rounded-3xl border border-gray-700 relative overflow-hidden">
+            <p class="text-gray-400 text-xs mb-1 font-medium">कुल संपत्ति (Net Worth)</p>
+            <h2 class="text-3xl font-extrabold text-white tracking-tight mb-4" id="net-worth">₹0</h2>
+            
+            <div class="grid grid-cols-3 gap-y-4 gap-x-2 border-t border-gray-700/50 pt-4">
+                <div><p class="text-[10px] text-gray-500 mb-0.5">🏦 Bank</p><p class="text-xs font-bold text-white" id="bank-balance">₹0</p></div>
+                <div><p class="text-[10px] text-gray-500 mb-0.5">👩‍💼 Wife A/c</p><p class="text-xs font-bold text-white" id="wife-balance">₹0</p></div>
+                <div><p class="text-[10px] text-gray-500 mb-0.5">💵 Cash</p><p class="text-xs font-bold text-white" id="cash-balance">₹0</p></div>
+                <div><p class="text-[10px] text-gray-500 mb-0.5">📱 Wallet</p><p class="text-xs font-bold text-white" id="wallet-balance">₹0</p></div>
+                <div class="col-span-2"><p class="text-[10px] text-red-500 mb-0.5">💳 CC Due (Outstanding)</p><p class="text-xs font-bold text-red-400" id="cc-due">₹0</p></div>
             </div>
         </div>
     </header>
 
-    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden max-w-screen-2xl mx-auto w-full relative">
-        <aside class="w-full lg:w-80 bg-white border-t lg:border-t-0 lg:border-r shadow-md flex flex-col z-40 order-2 lg:order-1 h-[35vh] lg:h-full overflow-y-auto">
-            <div class="p-3 lg:p-4 border-b bg-gray-50 sticky top-0 z-10">
-                <h2 class="text-base lg:text-lg font-bold text-gray-700 flex items-center gap-2">
-                    <span>⚙️</span> Properties Panel
-                </h2>
-                <p class="text-[10px] lg:text-xs text-gray-500 mt-1">Select an element to edit properties.</p>
+    <main class="px-6 mt-6 space-y-6">
+        <!-- Dashboard Stats -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gray-800 p-4 rounded-3xl border border-gray-700/50 shadow-lg">
+                <p class="text-[10px] text-emerald-400 uppercase font-bold mb-1">Total Income</p>
+                <p class="text-lg font-bold text-white" id="total-income">₹0</p>
             </div>
-            
-            <div id="dynamicProperties" class="p-4 lg:p-5 space-y-4 lg:space-y-6 pb-10">
-                <div class="text-center py-10 opacity-50">
-                    <svg class="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
-                    <p class="text-xs lg:text-sm">Click on any text, photo, QR code, or box to edit.</p>
-                </div>
-            </div>
-        </aside>
-
-        <section id="workspace" class="flex-1 flex justify-center items-start overflow-auto p-4 lg:p-8 relative order-1 lg:order-2">
-            <div class="absolute top-2 left-4 text-[10px] lg:text-xs font-bold text-gray-500 z-10 bg-white/80 px-2 py-1 rounded">Size: 8.5 cm x 5.5 cm (Standard CR80)</div>
-
-            <div id="cardWrapper" class="relative origin-top-left lg:origin-top shadow-2xl transition-transform duration-200" style="width: 1004px; height: 650px;">
-                <div id="card" class="w-full h-full absolute top-0 left-0 bg-white">
-                    <div class="canvas-element" id="el_bgTop" data-type="box" style="top:0px; left:0px; width:1004px; height:150px; background-color: #713f12;"></div>
-                    <div class="canvas-element" id="el_bgBottom" data-type="box" style="top:620px; left:0px; width:1004px; height:30px; background-color: #713f12;"></div>
-                    
-                    <div class="canvas-element font-bold" id="el_company" data-type="text" style="top:45px; left:250px; font-size: 42px; color: #ffffff; font-family: 'Playfair Display', serif; text-align: left;">COMPANY NAME PVT. LTD.</div>
-                    <div class="canvas-element" id="el_title" data-type="text" style="top:180px; left:40px; font-size:20px; color:#4b5563; font-weight:bold; font-family: 'Inter', sans-serif; text-align: left;">CERTIFICATE OF PURITY</div>
-                    <div class="canvas-element font-bold" id="el_cert_no" data-type="text" style="top:180px; left:750px; font-size:18px; color:#b91c1c; font-family: 'Roboto', sans-serif; text-align: right;">CERT. NO: 1001</div>
-                    <div class="canvas-element font-bold" id="el_jeweller" data-type="text" style="top:230px; left:40px; font-size: 28px; color: #8c2d04; font-family: 'Inter', sans-serif; text-align: left;">JEWELLER NAME</div>
-                    
-                    <div class="canvas-element font-semibold" id="el_details" data-type="text" style="top:300px; left:40px; font-size: 20px; color: #000000; font-family: 'Roboto', sans-serif; text-align: left;">
-                        CUSTOMER: JOHN DOE<br><br>
-                        ASSAY NO: XRF-12345<br><br>
-                        TYPE: GOLD RING<br><br>
-                        WEIGHT: 5.500 gm<br><br>
-                        PURITY: 22K 916
-                    </div>
-
-                    <div class="canvas-element text-sm" id="el_footerText" data-type="text" style="top:626px; left:350px; color: #ffffff; font-family: 'Inter', sans-serif; text-align: center;">This certificate is generated for XRF testing purposes.</div>
-
-                    <div class="canvas-element bg-white p-2 border shadow-sm" id="el_photo" data-type="image" style="top:220px; left:580px; width:260px; height:260px;">
-                        <img src="https://placehold.co/400x400/eeeeee/cccccc?text=Double+Tap+To+Change" class="w-full h-full object-cover">
-                    </div>
-
-                    <div class="canvas-element p-2 bg-white rounded shadow-sm border" id="qrcode" data-type="qr" data-auto="true" data-color-dark="#000000" data-color-light="#ffffff" style="top:410px; left:810px; width:160px; height:160px;">
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <div id="cameraModal" class="fixed inset-0 bg-black/80 z-[100] hidden flex-col items-center justify-center backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden border border-gray-200">
-            <div class="px-4 py-3 border-b flex justify-between items-center bg-gray-50">
-                <h3 class="font-bold text-gray-800 flex items-center gap-2">📷 Live Camera</h3>
-                <button onclick="closeWebcam()" class="text-gray-400 hover:text-red-500 font-bold p-1 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="p-4 bg-gray-900 flex justify-center items-center">
-                <video id="webcamVideo" autoplay playsinline class="w-full aspect-video object-cover rounded shadow-inner bg-black"></video>
-            </div>
-            <div class="p-4 bg-gray-50 flex justify-center">
-                <button onclick="captureWebcam()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-full font-bold shadow-md transition transform hover:scale-105 active:scale-95 flex items-center gap-2 text-lg">
-                    <div class="w-4 h-4 rounded-full border-2 border-white bg-red-500"></div> Capture
-                </button>
+            <div class="bg-gray-800 p-4 rounded-3xl border border-gray-700/50 shadow-lg">
+                <p class="text-[10px] text-red-400 uppercase font-bold mb-1">Monthly EMIs</p>
+                <p class="text-lg font-bold text-orange-400" id="total-liabilities">₹0</p>
             </div>
         </div>
-    </div>
-    <canvas id="webcamCanvas" class="hidden"></canvas>
 
-<script>
-    let activeElement = null;
-    let elementCounter = 0;
-    let qrInstance = null;
-    let clipboardData = null; 
-    let isLandscape = true; 
+        <!-- 📊 CHART -->
+        <div class="bg-gray-800 p-5 rounded-3xl border border-gray-700/50 flex flex-col shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-24 h-24 relative"><canvas id="expense-chart"></canvas></div>
+                <div class="w-3/5 space-y-2">
+                    <div class="flex justify-between text-[10px]"><span class="text-gray-400">Needs</span><span id="chart-need-val" class="font-bold text-white">₹0</span></div>
+                    <div class="flex justify-between text-[10px]"><span class="text-gray-400">Wants</span><span id="chart-want-val" class="font-bold text-white">₹0</span></div>
+                    <div class="flex justify-between text-[10px]"><span class="text-gray-400">EMI/Liability</span><span id="chart-emi-val" class="font-bold text-white">₹0</span></div>
+                </div>
+            </div>
+        </div>
 
-    let historyStack = [];
-    let historyIndex = -1;
-    let isRestoringState = false;
+        <!-- 🔍 LIST -->
+        <div class="bg-gray-800 p-6 rounded-3xl border border-gray-700/50 mb-8">
+            <input type="text" id="search-input" placeholder="खोजें (e.g. Salary, Rent)..." class="w-full bg-gray-900 text-sm text-white px-4 py-3 rounded-xl border border-gray-700 focus:border-emerald-500 outline-none mb-4 transition">
+            <div id="search-summary" class="hidden bg-emerald-900/20 p-3 rounded-xl border border-emerald-500/20 mb-4"><p id="search-grand" class="text-center font-bold text-emerald-400"></p></div>
+            <div id="transaction-list" class="space-y-4"></div>
+            <button id="load-more-btn" class="w-full mt-4 text-[10px] font-bold text-gray-500 uppercase bg-gray-900/50 py-3 rounded-xl hidden hover:text-white transition">Load More</button>
+        </div>
+    </main>
 
-    window.saveState = function() {
-        if (isRestoringState) return;
-        const currentActive = activeElement;
-        if(currentActive) currentActive.classList.remove('active-element');
-        
-        const cardHtml = document.getElementById('card').innerHTML;
-        const state = { html: cardHtml, isLandscape: isLandscape };
-        
-        if(currentActive) currentActive.classList.add('active-element');
-        
-        historyStack = historyStack.slice(0, historyIndex + 1);
-        historyStack.push(state);
-        
-        if (historyStack.length > 30) {
-            historyStack.shift();
-        } else {
-            historyIndex++;
-        }
-    };
+    <!-- FAB -->
+    <button id="fab-btn" class="fixed bottom-8 right-6 bg-emerald-500 hover:bg-emerald-400 text-gray-900 p-4 rounded-2xl shadow-xl z-40 transition-transform active:scale-90">
+        <i class="ph ph-plus text-3xl font-bold"></i>
+    </button>
 
-    window.undo = function() {
-        if (historyIndex > 0) {
-            historyIndex--;
-            restoreState(historyStack[historyIndex]);
-            window.showToast("Undo successful");
-        } else {
-            window.showToast("Nothing to undo", true);
-        }
-    };
-
-    window.redo = function() {
-        if (historyIndex < historyStack.length - 1) {
-            historyIndex++;
-            restoreState(historyStack[historyIndex]);
-            window.showToast("Redo successful");
-        } else {
-            window.showToast("Nothing to redo", true);
-        }
-    };
-
-    function restoreState(state) {
-        isRestoringState = true;
-        document.getElementById('card').innerHTML = state.html;
-        
-        if (isLandscape !== state.isLandscape) {
-            isLandscape = state.isLandscape;
-            const wrapper = document.getElementById('cardWrapper');
-            wrapper.style.width = isLandscape ? '1004px' : '650px';
-            wrapper.style.height = isLandscape ? '650px' : '1004px';
-            window.updateCanvasScale();
-        }
-        
-        if (activeElement) {
-            activeElement = null;
-            buildPropertiesPanel();
-        }
-
-        const qrElements = document.querySelectorAll('.canvas-element[data-type="qr"]');
-        qrElements.forEach(el => window.renderQR(el));
-        
-        isRestoringState = false;
-    }
-
-    function extractCertNumber() {
-        const textElements = document.querySelectorAll('.canvas-element[data-type="text"]');
-        const regexCert = /(?:CERTIFICATE|CERT\.?|SR\.?|SERIAL)\s*NO[\s\.\-:]*([A-Za-z0-9_-]+)/i; 
-        for (let el of textElements) {
-            let cleanText = el.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<[^>]*>?/gm, '');
-            let lines = cleanText.split('\n');
-            for (let line of lines) {
-                let match = line.match(regexCert);
-                if (match && match[1]) return match[1].trim(); 
-            }
-        }
-        const regexAssay = /ASSAY(?:ING)?\s*NO[\s\.\-:]*([A-Za-z0-9_-]+)/i; 
-        for (let el of textElements) {
-            let cleanText = el.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<[^>]*>?/gm, '');
-            let lines = cleanText.split('\n');
-            for (let line of lines) {
-                let match = line.match(regexAssay);
-                if (match && match[1]) return match[1].trim();
-            }
-        }
-        return "Jewellery_Card"; 
-    }
-
-    window.saveProjectFile = async function() {
-        if(activeElement) {
-            activeElement.classList.remove('active-element');
-            activeElement = null;
-            buildPropertiesPanel();
-        }
-        const cardHtml = document.getElementById('card').innerHTML;
-        const projectData = {
-            version: "1.1",
-            isLandscape: isLandscape,
-            html: cardHtml
-        };
-        
-        const blob = new Blob([JSON.stringify(projectData)], {type: "application/json"});
-        const certNo = extractCertNumber();
-        const currentDate = new Date().toISOString().split('T')[0];
-        const fileName = `${certNo}_Project_${currentDate}.json`;
-
-        if (window.showSaveFilePicker) {
-            try {
-                const fileHandle = await window.showSaveFilePicker({
-                    suggestedName: fileName,
-                    types: [{
-                        description: 'JSON Project File',
-                        accept: {'application/json': ['.json']},
-                    }],
-                });
-                const writable = await fileHandle.createWritable();
-                await writable.write(blob);
-                await writable.close();
-                window.showToast("Project saved to your selected folder!");
-                return; 
-            } catch (err) {
-                if (err.name === 'AbortError') return; 
-                console.warn("File Picker failed, using default download", err);
-            }
-        }
-        
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
-        window.showToast("Project saved! Aap is file ko baad me 'Open' kar sakte hain.");
-    };
-
-    window.loadProjectFile = function(input) {
-        const file = input.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                if (data.html !== undefined) {
-                    document.getElementById('card').innerHTML = data.html;
-                    isLandscape = data.isLandscape !== false;
-                    const wrapper = document.getElementById('cardWrapper');
-                    wrapper.style.width = isLandscape ? '1004px' : '650px';
-                    wrapper.style.height = isLandscape ? '650px' : '1004px';
-                    window.updateCanvasScale();
-                    
-                    const qrElements = document.querySelectorAll('.canvas-element[data-type="qr"]');
-                    qrElements.forEach(el => window.renderQR(el));
-                    
-                    let maxId = 0;
-                    document.querySelectorAll('.canvas-element').forEach(el => {
-                        const match = el.id.match(/_(\d+)$/);
-                        if (match && parseInt(match[1]) > maxId) maxId = parseInt(match[1]);
-                    });
-                    elementCounter = maxId;
-
-                    historyStack = [];
-                    historyIndex = -1;
-                    window.saveState();
-                    window.showToast("Project loaded successfully!");
-                } else {
-                    window.showToast("Invalid project file!", true);
-                }
-            } catch(err) {
-                window.showToast("Error loading project file!", true);
-            }
-        };
-        reader.readAsText(file);
-        input.value = ""; 
-    };
-
-    let currentCameraMode = 'new';
-    let videoStream = null;
-
-    window.handleCameraClick = function(mode) {
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        if (isMobile) {
-            if (mode === 'new') document.getElementById('cameraInput').click();
-            else document.getElementById('replaceImgCameraInput').click();
-        } else {
-            window.openWebcam(mode);
-        }
-    };
-
-    window.openWebcam = async function(mode) {
-        currentCameraMode = mode;
-        const modal = document.getElementById('cameraModal');
-        const video = document.getElementById('webcamVideo');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        try {
-            videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            video.srcObject = videoStream;
-        } catch (err) {
-            window.showToast("Camera access denied or no camera found!", true);
-            closeWebcam();
-        }
-    };
-
-    window.closeWebcam = function() {
-        const modal = document.getElementById('cameraModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
-            videoStream = null;
-        }
-    };
-
-    window.captureWebcam = function() {
-        const video = document.getElementById('webcamVideo');
-        const canvas = document.getElementById('webcamCanvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const photoDataUrl = canvas.toDataURL('image/jpeg', 0.95);
-        
-        if (currentCameraMode === 'new') {
-            elementCounter++;
-            const newEl = document.createElement('div');
-            newEl.className = 'canvas-element bg-white p-1 border shadow-sm';
-            newEl.id = 'custom_img_' + elementCounter;
-            newEl.dataset.type = 'image';
-            newEl.style.top = '100px';
-            newEl.style.left = '100px';
-            newEl.style.width = '200px';
-            newEl.style.height = '200px';
-            newEl.innerHTML = `<img src="${photoDataUrl}" class="w-full h-full object-cover">`;
-            document.getElementById('card').appendChild(newEl);
-            setActiveElement(newEl);
-            window.showToast("Photo captured!");
-            window.saveState();
-        } else if (currentCameraMode === 'replace' && activeElement && activeElement.dataset.type === 'image') {
-            activeElement.innerHTML = `<img src="${photoDataUrl}" class="w-full h-full object-cover">`;
-            window.showToast("Photo updated!");
-            window.saveState(); 
-        }
-        closeWebcam();
-    };
-
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    }
-    
-    const debouncedSaveState = debounce(window.saveState, 600);
-
-    window.showToast = function(message, isError = false) {
-        const toast = document.createElement('div');
-        toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-md shadow-lg font-bold z-[100] transition-opacity duration-300 ${isError ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'}`;
-        toast.innerText = message;
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    };
-
-    function rgb2hex(rgb) {
-        if (!rgb || rgb === 'transparent') return '#ffffff';
-        if (rgb.search("rgb") == -1) return rgb;
-        rgb = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+))?\)$/);
-        function hex(x) { return ("0" + parseInt(x).toString(16)).slice(-2); }
-        return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
-    }
-
-    window.updateCanvasScale = function() {
-        const workspace = document.getElementById('workspace');
-        const wrapper = document.getElementById('cardWrapper');
-        if (!workspace || !wrapper) return;
-        
-        const padding = window.innerWidth < 1024 ? 32 : 64;
-        const availableWidth = workspace.clientWidth - padding;
-        const currentCardWidth = isLandscape ? 1004 : 650;
-        
-        let scale = availableWidth / currentCardWidth;
-        if (scale > 1) scale = 1; 
-        
-        wrapper.style.transform = `scale(${scale})`;
-        const scaledHeight = (isLandscape ? 650 : 1004) * scale;
-        const naturalHeight = isLandscape ? 650 : 1004;
-        wrapper.style.marginBottom = `-${naturalHeight - scaledHeight}px`;
-        wrapper.style.marginRight = window.innerWidth < 1024 ? `-${currentCardWidth - (currentCardWidth*scale)}px` : '0px';
-    };
-
-    window.addEventListener('resize', debounce(window.updateCanvasScale, 150));
-
-    window.autoSyncQR = function() {
-        const qrElement = document.getElementById('qrcode');
-        if (qrElement && qrElement.dataset.auto === 'true') {
-            let texts = Array.from(document.querySelectorAll('.canvas-element[data-type="text"]'))
-                .map(el => el.innerText.trim())
-                .filter(text => text.length > 0)
-                .join(' | ');
-            
-            if (texts.length > 1500) texts = texts.substring(0, 1497) + '...';
-            
-            qrElement.dataset.qrdata = texts || "Empty Card";
-            renderQR(qrElement);
-            
-            const propQrData = document.getElementById('propQrData');
-            if (propQrData && propQrData.disabled) {
-                propQrData.value = texts;
-            }
-        }
-    };
-    
-    const debouncedAutoSyncQR = debounce(window.autoSyncQR, 500);
-    window.debouncedRenderQR = debounce(window.renderQR, 300);
-
-    function initInteract() {
-        interact('.canvas-element')
-            .draggable({
-                listeners: {
-                    start(event) { setActiveElement(event.target); },
-                    move(event) {
-                        const target = event.target;
-                        const x = (parseFloat(target.getAttribute('data-x')) || parseFloat(target.style.left) || 0) + event.dx;
-                        const y = (parseFloat(target.getAttribute('data-y')) || parseFloat(target.style.top) || 0) + event.dy;
-                        target.style.left = `${x}px`;
-                        target.style.top = `${y}px`;
-                        target.setAttribute('data-x', x);
-                        target.setAttribute('data-y', y);
-                    },
-                    end(event) { window.saveState(); } 
-                },
-                modifiers: [ interact.modifiers.restrictRect({ restriction: 'parent', endOnly: false }) ]
-            })
-            .resizable({
-                edges: { right: true, bottom: true, left: false, top: false },
-                margin: 15, 
-                listeners: {
-                    start(event) { setActiveElement(event.target); },
-                    move(event) {
-                        let target = event.target;
-                        const type = target.dataset.type;
-                        let x = (parseFloat(target.getAttribute('data-x')) || parseFloat(target.style.left) || 0);
-                        let y = (parseFloat(target.getAttribute('data-y')) || parseFloat(target.style.top) || 0);
-
-                        target.style.width = event.rect.width + 'px';
-                        target.style.height = event.rect.height + 'px';
-
-                        x += event.deltaRect.left;
-                        y += event.deltaRect.top;
-
-                        target.style.left = x + 'px';
-                        target.style.top = y + 'px';
-                        target.setAttribute('data-x', x);
-                        target.setAttribute('data-y', y);
-
-                        if (type === 'qr') window.debouncedRenderQR(target);
-                    },
-                    end(event) { window.saveState(); } 
-                }
-            })
-            .on('down', function (event) { 
-                let target = event.target;
-                if (!target.classList.contains('canvas-element')) target = target.closest('.canvas-element');
-                if (target) setActiveElement(target); 
-            })
-            .on('doubletap', function (event) {
-                let target = event.target;
-                if (!target.classList.contains('canvas-element')) target = target.closest('.canvas-element');
-                if (target && target.dataset.type === 'image') {
-                    setActiveElement(target);
-                    window.handleCameraClick('replace');
-                }
-            });
-
-        document.getElementById('workspace').addEventListener('mousedown', (e) => {
-            if (e.target.id === 'workspace' || e.target.id === 'cardArea' || e.target.id === 'card') {
-                if(activeElement) activeElement.classList.remove('active-element');
-                activeElement = null;
-                buildPropertiesPanel();
-            }
-        });
-    }
-
-    function setActiveElement(el) {
-        if(activeElement) activeElement.classList.remove('active-element');
-        activeElement = el;
-        activeElement.classList.add('active-element');
-        buildPropertiesPanel();
-    }
-
-    window.nudgeElement = function(dx, dy) {
-        if (!activeElement) return;
-        let x = (parseFloat(activeElement.getAttribute('data-x')) || parseFloat(activeElement.style.left) || 0) + dx;
-        let y = (parseFloat(activeElement.getAttribute('data-y')) || parseFloat(activeElement.style.top) || 0) + dy;
-        activeElement.style.left = x + 'px';
-        activeElement.style.top = y + 'px';
-        activeElement.setAttribute('data-x', x);
-        activeElement.setAttribute('data-y', y);
-        debouncedSaveState();
-    };
-
-    window.buildPropertiesPanel = function() {
-        const panel = document.getElementById('dynamicProperties');
-        panel.innerHTML = ''; 
-
-        if(!activeElement) {
-            panel.innerHTML = `
-                <div class="text-center py-10 opacity-50">
-                    <p class="text-sm">Click on any element to edit.</p>
-                </div>`;
-            return;
-        }
-
-        const type = activeElement.dataset.type;
-        
-        const currentW = parseInt(activeElement.style.width) || activeElement.offsetWidth;
-        const currentH = parseInt(activeElement.style.height) || activeElement.offsetHeight;
-        
-        const commonControlsHtml = `
-            <div class="mt-4 pt-4 border-t border-gray-100">
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Position & Size</label>
+    <!-- 📄 THE SMART ALL-IN-ONE ADD MODAL -->
+    <div id="add-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex-col justify-end items-center transition-opacity">
+        <div id="modal-content" class="bg-gray-800 w-full max-w-md rounded-t-[2.5rem] p-8 transform translate-y-full transition-transform duration-300 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modal-title" class="text-xl font-extrabold text-white">नया हिसाब</h3>
+                <button id="close-modal-btn" class="text-gray-400 bg-gray-700/50 p-2 rounded-full hover:text-white transition"><i class="ph ph-x text-xl font-bold"></i></button>
+            </div>
+            <form id="add-form" class="space-y-4">
+                <input type="hidden" id="edit-id" value="">
                 
-                <div class="flex gap-1 mb-3">
-                    <button onclick="window.nudgeElement(0, -5)" class="flex-1 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-bold transition" title="Up Arrow">⬆️ Up</button>
-                    <button onclick="window.nudgeElement(0, 5)" class="flex-1 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-bold transition" title="Down Arrow">⬇️ Down</button>
-                    <button onclick="window.nudgeElement(-5, 0)" class="flex-1 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-bold transition" title="Left Arrow">⬅️ Left</button>
-                    <button onclick="window.nudgeElement(5, 0)" class="flex-1 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-bold transition" title="Right Arrow">➡️ Right</button>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mb-1">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Width (px)</label>
-                        <input type="number" id="globalPropW" value="${currentW}" class="w-full border border-gray-300 p-2 text-sm rounded-md shadow-sm">
+                        <label class="text-[10px] text-gray-500 ml-1 block mb-1">DATE</label>
+                        <input type="datetime-local" id="datetime-input" required class="w-full bg-gray-900 text-xs text-white px-3 py-3 rounded-xl border border-gray-700 outline-none focus:border-emerald-500">
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Height (px)</label>
-                        <input type="number" id="globalPropH" value="${currentH}" class="w-full border border-gray-300 p-2 text-sm rounded-md shadow-sm">
-                    </div>
-                </div>
-                <p class="text-[10px] text-gray-400 font-medium">Hint: Set W: 1004 & H: 650 to fit full card.</p>
-            </div>
-            
-            <div class="grid grid-cols-3 gap-2 pt-4 border-t border-gray-100 mt-4">
-                <button onclick="window.copyElement()" class="w-full py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md text-sm font-bold flex justify-center items-center transition" title="Copy (Ctrl+C)">📋 Copy</button>
-                <button onclick="window.cutElement()" class="w-full py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md text-sm font-bold flex justify-center items-center transition" title="Cut (Ctrl+X)">✂️ Cut</button>
-                <button onclick="window.deleteActiveElement()" class="w-full py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-sm font-bold flex justify-center items-center transition" title="Delete (Del)">🗑️ Del</button>
-            </div>
-        `;
-
-        let specificHtml = '';
-
-        if(type === 'text') {
-            const currentFont = window.getComputedStyle(activeElement).fontFamily.replace(/['"]/g, '');
-            const currentColor = rgb2hex(window.getComputedStyle(activeElement).color);
-            const currentSize = parseInt(window.getComputedStyle(activeElement).fontSize);
-            const currentAlign = window.getComputedStyle(activeElement).textAlign || 'left';
-            
-            specificHtml = `
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Edit Text Content</label>
-                    <textarea id="propText" class="w-full border-gray-300 border focus:border-blue-500 p-2 rounded-md shadow-sm resize-y" rows="4">${activeElement.innerHTML.replace(/<br>/g, '\n')}</textarea>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Font Style</label>
-                        <select id="propFont" class="w-full border-gray-300 border p-2 text-sm rounded-md">
-                            <option value="'Inter', sans-serif" ${currentFont.includes('Inter') ? 'selected' : ''}>Inter (Modern)</option>
-                            <option value="'Playfair Display', serif" ${currentFont.includes('Playfair') ? 'selected' : ''}>Playfair (Elegant)</option>
-                            <option value="'Roboto', sans-serif" ${currentFont.includes('Roboto') ? 'selected' : ''}>Roboto (Clean)</option>
-                            <option value="'Open Sans', sans-serif" ${currentFont.includes('Open Sans') ? 'selected' : ''}>Open Sans</option>
-                            <option value="'Montserrat', sans-serif" ${currentFont.includes('Montserrat') ? 'selected' : ''}>Montserrat</option>
+                    
+                    <div id="wallet-container">
+                        <label id="wallet-label" class="text-[10px] text-gray-500 ml-1 block mb-1">WALLET (खाता)</label>
+                        <select id="wallet-input" class="w-full bg-gray-900 text-xs text-white px-3 py-3 rounded-xl border border-gray-700 outline-none focus:border-emerald-500">
+                            <option value="Bank">🏦 मेरा बैंक</option>
+                            <option value="Cash">💵 नकद (Cash)</option>
+                            <option value="Wife">👩‍💼 वाइफ का बैंक</option>
+                            <option value="Wallet">📱 वॉलेट (Paytm)</option>
+                            <option value="Credit Card">💳 क्रेडिट कार्ड</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Font Size (px)</label>
-                        <input type="number" id="propSize" value="${currentSize}" class="w-full border p-2 text-sm rounded-md">
+
+                    <div id="convert-container" class="hidden">
+                        <label class="text-[10px] text-blue-400 ml-1 block mb-1 uppercase font-bold">क्या किया?</label>
+                        <select id="convert-type-input" class="w-full bg-gray-900 text-xs text-white px-3 py-3 rounded-xl border border-blue-500/30 outline-none focus:border-blue-500">
+                            <option value="BankToCash">🏦 बैंक से कैश निकाला (ATM)</option>
+                            <option value="CashToBank">💵 कैश बैंक में जमा किया</option>
+                        </select>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Text Color</label>
-                        <div class="flex items-center gap-2">
-                            <input type="color" id="propColor" value="${currentColor}">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Alignment</label>
-                        <div class="flex bg-gray-200 rounded p-1 gap-1">
-                            <button id="alignLeft" class="flex-1 py-1 rounded text-sm ${currentAlign==='left'?'bg-white shadow':''}" title="Left">⫷</button>
-                            <button id="alignCenter" class="flex-1 py-1 rounded text-sm ${currentAlign==='center'?'bg-white shadow':''}" title="Center">≣</button>
-                            <button id="alignRight" class="flex-1 py-1 rounded text-sm ${currentAlign==='right'?'bg-white shadow':''}" title="Right">⫸</button>
-                            <button id="alignJustify" class="flex-1 py-1 rounded text-sm ${currentAlign==='justify'?'bg-white shadow':''}" title="Justify">≡</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            panel.innerHTML = specificHtml + commonControlsHtml;
-            
-            document.getElementById('propText').addEventListener('input', (e) => { 
-                activeElement.innerHTML = e.target.value.replace(/\n/g, '<br>'); debouncedAutoSyncQR(); debouncedSaveState();
-            });
-            document.getElementById('propFont').addEventListener('change', (e) => { activeElement.style.fontFamily = e.target.value; window.saveState(); });
-            document.getElementById('propSize').addEventListener('input', (e) => { activeElement.style.fontSize = e.target.value + 'px'; debouncedSaveState(); });
-            document.getElementById('propColor').addEventListener('input', (e) => { activeElement.style.color = e.target.value; debouncedSaveState(); });
-
-            const setAlign = (align) => { activeElement.style.textAlign = align; window.saveState(); buildPropertiesPanel(); };
-            document.getElementById('alignLeft').addEventListener('click', () => setAlign('left'));
-            document.getElementById('alignCenter').addEventListener('click', () => setAlign('center'));
-            document.getElementById('alignRight').addEventListener('click', () => setAlign('right'));
-            document.getElementById('alignJustify').addEventListener('click', () => setAlign('justify'));
-        }
-        else if(type === 'image') {
-            specificHtml = `
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Change Image</label>
-                    <div class="flex gap-2">
-                        <button onclick="document.getElementById('propImgInput').click()" class="flex-1 py-2 border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-md text-sm text-gray-600 font-semibold bg-gray-50 transition">📁 Upload</button>
-                        <button onclick="window.handleCameraClick('replace')" class="flex-1 py-2 border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-md text-sm text-blue-600 font-semibold bg-blue-50 transition">📸 Camera</button>
-                    </div>
-                    <input type="file" id="propImgInput" accept="image/*" class="hidden">
-                    <p class="text-[10px] text-gray-400 mt-2 text-center">Tip: Double tap image to open camera directly.</p>
-                </div>
-            `;
-            
-            panel.innerHTML = specificHtml + commonControlsHtml;
-
-            document.getElementById('propImgInput').addEventListener('change', function(e) {
-                if (this.files && this.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = function(evt) {
-                        activeElement.innerHTML = `<img src="${evt.target.result}" class="w-full h-full object-cover">`;
-                        window.saveState();
-                    }
-                    reader.readAsDataURL(this.files[0]);
-                }
-            });
-        }
-        else if(type === 'qr') {
-            const dataStr = activeElement.dataset.qrdata || "";
-            const colorDark = activeElement.dataset.colorDark || "#000000";
-            const colorLight = activeElement.dataset.colorLight || "#ffffff";
-            const isAuto = activeElement.dataset.auto === 'true';
-
-            specificHtml = `
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">QR Code Data</label>
-                        <label class="flex items-center gap-1 text-blue-600 font-bold text-xs cursor-pointer bg-blue-50 px-2 py-1 rounded">
-                            <input type="checkbox" id="propQrAuto" ${isAuto ? 'checked' : ''} class="cursor-pointer"> Auto-Sync Text
-                        </label>
-                    </div>
-                    <textarea id="propQrData" class="w-full border-gray-300 border p-2 rounded-md shadow-sm resize-y text-sm ${isAuto ? 'bg-gray-100 text-gray-500' : ''}" rows="3" placeholder="Enter text or URL" ${isAuto ? 'disabled' : ''}>${dataStr}</textarea>
-                </div>
-                <div class="grid grid-cols-2 gap-4 mt-2">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">QR Front Color</label>
-                        <input type="color" id="propQrDark" value="${colorDark}">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Background</label>
-                        <input type="color" id="propQrLight" value="${colorLight}">
-                    </div>
-                </div>
-            `;
-            
-            panel.innerHTML = specificHtml + commonControlsHtml;
-
-            const updateQRFromPanel = debounce(() => {
-                if (!document.getElementById('propQrAuto').checked) activeElement.dataset.qrdata = document.getElementById('propQrData').value;
-                activeElement.dataset.colorDark = document.getElementById('propQrDark').value;
-                activeElement.dataset.colorLight = document.getElementById('propQrLight').value;
-                renderQR(activeElement);
-                window.saveState();
-            }, 300);
-
-            document.getElementById('propQrData').addEventListener('input', updateQRFromPanel);
-            document.getElementById('propQrDark').addEventListener('input', updateQRFromPanel);
-            document.getElementById('propQrLight').addEventListener('input', updateQRFromPanel);
-            
-            document.getElementById('propQrAuto').addEventListener('change', (e) => {
-                const isChecked = e.target.checked;
-                activeElement.dataset.auto = isChecked ? 'true' : 'false';
-                document.getElementById('propQrData').disabled = isChecked;
-                if (isChecked) {
-                    document.getElementById('propQrData').classList.add('bg-gray-100', 'text-gray-500');
-                    window.autoSyncQR();
-                } else {
-                    document.getElementById('propQrData').classList.remove('bg-gray-100', 'text-gray-500');
-                }
-                window.saveState();
-            });
-        }
-        else if(type === 'box') {
-            const currentColor = rgb2hex(window.getComputedStyle(activeElement).backgroundColor);
-            
-            specificHtml = `
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Box Background Color</label>
-                    <div class="flex items-center gap-2">
-                        <input type="color" id="propBoxColor" value="${currentColor}">
-                    </div>
-                </div>
-            `;
-            
-            panel.innerHTML = specificHtml + commonControlsHtml;
-            document.getElementById('propBoxColor').addEventListener('input', (e) => { 
-                activeElement.style.backgroundColor = e.target.value; debouncedSaveState();
-            });
-        }
-
-        const wInput = document.getElementById('globalPropW');
-        const hInput = document.getElementById('globalPropH');
-        
-        if(wInput) {
-            wInput.addEventListener('input', (e) => {
-                activeElement.style.width = e.target.value + 'px';
-                if(activeElement.dataset.type === 'qr') window.debouncedRenderQR(activeElement);
-                debouncedSaveState();
-            });
-        }
-        
-        if(hInput) {
-            hInput.addEventListener('input', (e) => {
-                activeElement.style.height = e.target.value + 'px';
-                if(activeElement.dataset.type === 'qr') window.debouncedRenderQR(activeElement);
-                debouncedSaveState();
-            });
-        }
-    };
-
-    window.deleteActiveElement = function() {
-        if(activeElement) {
-            activeElement.remove();
-            activeElement = null;
-            buildPropertiesPanel();
-            window.showToast("Element deleted successfully");
-            debouncedAutoSyncQR(); 
-            window.saveState();
-        }
-    };
-
-    window.copyElement = function() {
-        if (!activeElement) return;
-        const computedStyle = window.getComputedStyle(activeElement);
-        clipboardData = {
-            type: activeElement.dataset.type,
-            html: activeElement.innerHTML,
-            src: activeElement.dataset.type === 'image' ? activeElement.querySelector('img').src : null,
-            dataset: { ...activeElement.dataset },
-            style: {
-                color: activeElement.style.color,
-                fontSize: activeElement.style.fontSize,
-                fontFamily: activeElement.style.fontFamily,
-                textAlign: activeElement.style.textAlign,
-                width: activeElement.style.width || computedStyle.width,
-                height: activeElement.style.height || computedStyle.height,
-                backgroundColor: activeElement.style.backgroundColor
-            }
-        };
-        window.showToast("Element copied to clipboard");
-    };
-
-    window.cutElement = function() {
-        if (activeElement) { window.copyElement(); window.deleteActiveElement(); }
-    };
-
-    window.pasteElement = function() {
-        if (!clipboardData) { window.showToast("Clipboard is empty!", true); return; }
-        
-        elementCounter++;
-        const newEl = document.createElement('div');
-        newEl.className = 'canvas-element';
-        newEl.id = 'custom_el_' + elementCounter;
-        newEl.dataset.type = clipboardData.type;
-        newEl.style.top = '150px';
-        newEl.style.left = '150px';
-        
-        if (clipboardData.type === 'text') {
-            newEl.className += ' font-semibold';
-            newEl.innerHTML = clipboardData.html;
-            newEl.style.color = clipboardData.style.color;
-            newEl.style.fontSize = clipboardData.style.fontSize;
-            newEl.style.fontFamily = clipboardData.style.fontFamily;
-            newEl.style.textAlign = clipboardData.style.textAlign || 'left';
-            if (clipboardData.style.width) newEl.style.width = clipboardData.style.width;
-            if (clipboardData.style.height) newEl.style.height = clipboardData.style.height;
-        } else if (clipboardData.type === 'image') {
-            newEl.className += ' bg-white p-1 border shadow-sm';
-            newEl.style.width = clipboardData.style.width;
-            newEl.style.height = clipboardData.style.height;
-            newEl.innerHTML = `<img src="${clipboardData.src}" class="w-full h-full object-cover">`;
-        } else if (clipboardData.type === 'qr') {
-            newEl.className += ' p-2 bg-white rounded shadow-sm border';
-            newEl.style.width = clipboardData.style.width;
-            newEl.style.height = clipboardData.style.height;
-            newEl.dataset.qrdata = clipboardData.dataset.qrdata;
-            newEl.dataset.colorDark = clipboardData.dataset.colorDark;
-            newEl.dataset.colorLight = clipboardData.dataset.colorLight;
-            document.getElementById('card').appendChild(newEl);
-            renderQR(newEl);
-            setActiveElement(newEl);
-            window.showToast("Element pasted");
-            window.saveState();
-            return; 
-        } else if (clipboardData.type === 'box') {
-            newEl.style.width = clipboardData.style.width;
-            newEl.style.height = clipboardData.style.height;
-            newEl.style.backgroundColor = clipboardData.style.backgroundColor;
-        }
-
-        document.getElementById('card').appendChild(newEl);
-        setActiveElement(newEl);
-        window.showToast("Element pasted");
-        if (clipboardData.type === 'text') debouncedAutoSyncQR();
-        window.saveState();
-    };
-
-    window.toggleOrientation = function() {
-        const wrapper = document.getElementById('cardWrapper');
-        if(isLandscape) {
-            wrapper.style.width = '650px';
-            wrapper.style.height = '1004px';
-            isLandscape = false;
-            window.showToast("Switched to Vertical Portrait (5.5 x 8.5 cm)");
-        } else {
-            wrapper.style.width = '1004px';
-            wrapper.style.height = '650px';
-            isLandscape = true;
-            window.showToast("Switched to Horizontal Landscape (8.5 x 5.5 cm)");
-        }
-        window.updateCanvasScale();
-        window.saveState();
-    };
-
-    // --- UPDATED: Keyboard Shortcuts Event Listener with Arrow Keys ---
-    document.addEventListener('keydown', function(e) {
-        const isInputActive = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'SELECT';
-        
-        if (e.ctrlKey || e.metaKey) {
-            if (e.key === 'z' || e.key === 'Z') {
-                e.preventDefault();
-                if (e.shiftKey) window.redo(); else window.undo();
-                return;
-            } else if (e.key === 'y' || e.key === 'Y') {
-                e.preventDefault(); window.redo(); return;
-            }
-        }
-        
-        if (isInputActive) return; 
-
-        if ((e.key === 'Delete' || e.key === 'Backspace') && activeElement) {
-            window.deleteActiveElement();
-        } 
-        else if (e.ctrlKey || e.metaKey) {
-            if (e.key === 'c' || e.key === 'C') window.copyElement();
-            else if (e.key === 'x' || e.key === 'X') window.cutElement();
-            else if (e.key === 'v' || e.key === 'V') window.pasteElement();
-        } 
-        else if (activeElement) {
-            if (e.key === 'ArrowUp') { 
-                e.preventDefault(); 
-                window.nudgeElement(0, -5); 
-            }
-            else if (e.key === 'ArrowDown') { 
-                e.preventDefault(); 
-                window.nudgeElement(0, 5); 
-            }
-            else if (e.key === 'ArrowLeft') { 
-                e.preventDefault(); 
-                window.nudgeElement(-5, 0); 
-            }
-            else if (e.key === 'ArrowRight') { 
-                e.preventDefault(); 
-                window.nudgeElement(5, 0); 
-            }
-        }
-    });
-
-    window.addNewText = function() {
-        elementCounter++;
-        const newEl = document.createElement('div');
-        newEl.className = 'canvas-element font-semibold';
-        newEl.id = 'custom_text_' + elementCounter;
-        newEl.dataset.type = 'text';
-        newEl.style.top = '100px';
-        newEl.style.left = '100px';
-        newEl.style.fontSize = '24px';
-        newEl.style.color = '#000000';
-        newEl.style.fontFamily = "'Inter', sans-serif";
-        newEl.style.textAlign = 'left';
-        newEl.innerHTML = 'Double click or select to edit text';
-        
-        document.getElementById('card').appendChild(newEl);
-        setActiveElement(newEl);
-        debouncedAutoSyncQR();
-        window.saveState(); 
-    };
-
-    window.addNewImage = function(input) {
-        if (input.files && input.files[0]) {
-            elementCounter++;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const newEl = document.createElement('div');
-                newEl.className = 'canvas-element bg-white p-1 border shadow-sm';
-                newEl.id = 'custom_img_' + elementCounter;
-                newEl.dataset.type = 'image';
-                newEl.style.top = '100px';
-                newEl.style.left = '100px';
-                newEl.style.width = '200px';
-                newEl.style.height = '200px';
-                newEl.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
                 
-                document.getElementById('card').appendChild(newEl);
-                setActiveElement(newEl);
-                input.value = ""; 
-                window.saveState();
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
-    };
-    
-    document.getElementById('replaceImgCameraInput').addEventListener('change', function(e) {
-        if (this.files && this.files[0] && activeElement && activeElement.dataset.type === 'image') {
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                activeElement.innerHTML = `<img src="${evt.target.result}" class="w-full h-full object-cover">`;
-                window.saveState(); 
-            }
-            reader.readAsDataURL(this.files[0]);
-            this.value = ""; 
-        }
-    });
+                <div>
+                    <label class="text-[10px] text-gray-500 ml-1 block mb-1">AMOUNT (₹)</label>
+                    <input type="number" id="amount-input" required step="any" class="w-full bg-gray-900 text-2xl font-bold text-white px-4 py-3 rounded-xl border border-gray-700 outline-none focus:border-emerald-500">
+                </div>
+                
+                <div>
+                    <label class="text-[10px] text-gray-500 ml-1 block mb-1">DESCRIPTION</label>
+                    <input type="text" id="desc-input" required placeholder="विवरण लिखें..." class="w-full bg-gray-900 text-sm text-white px-4 py-3 rounded-xl border border-gray-700 outline-none focus:border-emerald-500">
+                </div>
 
-    window.renderQR = function(element) {
-        element.innerHTML = "";
-        const data = element.dataset.qrdata || "Empty";
-        const width = element.clientWidth;
-        const height = element.clientHeight;
-        const colorDark = element.dataset.colorDark || "#000000";
-        const colorLight = element.dataset.colorLight || "#ffffff";
+                <div id="recurring-container" class="flex items-center bg-gray-900/30 p-3 rounded-xl border border-gray-700/50">
+                    <input type="checkbox" id="recurring-input" class="w-4 h-4 text-emerald-500 rounded outline-none cursor-pointer">
+                    <label for="recurring-input" class="ml-3 text-xs text-gray-400 cursor-pointer">हर महीने का फिक्स (EMI/Bill)</label>
+                </div>
+                
+                <div class="space-y-3">
+                    <label class="text-[10px] text-gray-500 ml-1 block">CATEGORY</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" data-category="Need" class="cat-btn bg-blue-500 text-white py-2 rounded-xl text-[10px] font-bold transition">ज़रूरत</button>
+                        <button type="button" data-category="Want" class="cat-btn bg-gray-700 text-gray-400 py-2 rounded-xl text-[10px] font-bold transition">शौक</button>
+                        <button type="button" data-category="Liability" class="cat-btn bg-gray-700 text-gray-400 py-2 rounded-xl text-[10px] font-bold transition">किस्त/उधार</button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" data-category="Active Income" class="cat-btn bg-gray-700 text-gray-400 py-2 rounded-xl text-[10px] font-bold transition">सैलरी/दुकान</button>
+                        <button type="button" data-category="Passive Income" class="cat-btn bg-gray-700 text-gray-400 py-2 rounded-xl text-[10px] font-bold transition">बिना काम</button>
+                        <button type="button" data-category="Convert" class="cat-btn bg-gray-700 text-blue-400 border border-blue-500/30 py-2 rounded-xl text-[10px] font-bold shadow-[0_0_10px_rgba(59,130,246,0.1)] transition">🔄 कन्वर्ट</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" data-category="Capital Gain" class="cat-btn bg-gray-700 text-gray-400 py-2 rounded-xl text-[10px] font-bold transition">एकमुश्त (BC/Bonus)</button>
+                        <button type="button" data-category="Asset" class="cat-btn bg-gray-700 text-gray-400 py-2 rounded-xl text-[10px] font-bold transition">इन्वेस्टमेंट</button>
+                    </div>
+                    <input type="hidden" id="selected-category" value="Need">
+                </div>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-extrabold py-4 rounded-xl mt-4 shadow-lg transition">हिसाब सेव करें</button>
+            </form>
+        </div>
+    </div>
 
-        try {
-            new QRCode(element, {
-                text: data, width: width, height: height, colorDark: colorDark, colorLight: colorLight, correctLevel: QRCode.CorrectLevel.L 
-            });
-        } catch (e) {
-            element.innerHTML = "";
-            new QRCode(element, {
-                text: data.substring(0, 1000) + '...', width: width, height: height, colorDark: colorDark, colorLight: colorLight, correctLevel: QRCode.CorrectLevel.L
-            });
-        }
-    };
-    
-    window.saveImage = async function(format = 'png') {
-        const wrapperElement = document.getElementById('cardWrapper');
-        const cardElement = document.getElementById('card');
-        
-        if(activeElement) {
-            activeElement.classList.remove('active-element');
-            activeElement = null;
-            buildPropertiesPanel();
-        }
-        
-        cardElement.classList.add('exporting');
-        window.showToast("Rendering 4K Ultra-HD Card...");
-        
-        const originalTransform = wrapperElement.style.transform;
-        wrapperElement.style.transform = 'scale(1)';
-        
-        await new Promise(resolve => setTimeout(resolve, 50));
-        
-        try {
-            const targetWidth = isLandscape ? 1004 : 650;
-            const targetHeight = isLandscape ? 650 : 1004;
+    <!-- CUSTOM RANGE MODAL (Same as before) -->
+    <div id="custom-range-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex-col justify-center items-center p-6 transition-opacity">
+        <div class="bg-gray-800 w-full max-w-sm rounded-[2rem] p-8 border border-gray-700 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-6 flex items-center"><i class="ph-fill ph-calendar-plus mr-2 text-emerald-400"></i> कस्टम डेट फिल्टर</h3>
+            <div class="space-y-4">
+                <div><label class="text-[10px] text-gray-500 mb-1 block">START DATE</label><input type="date" id="range-start" class="w-full bg-gray-900 text-white px-4 py-3 rounded-xl border border-gray-700 outline-none"></div>
+                <div><label class="text-[10px] text-gray-500 mb-1 block">END DATE</label><input type="date" id="range-end" class="w-full bg-gray-900 text-white px-4 py-3 rounded-xl border border-gray-700 outline-none"></div>
+            </div>
+            <button id="apply-range-btn" class="w-full bg-emerald-500 text-gray-900 font-extrabold py-4 rounded-xl mt-6 shadow-lg transition">फिल्टर लगाएँ</button>
+            <button id="reset-range-btn" class="w-full text-red-400 text-xs font-bold py-3 mt-2 hover:text-red-300 transition">फिल्टर हटाएँ</button>
+        </div>
+    </div>
 
-            const canvas = await html2canvas(cardElement, { 
-                scale: 4, 
-                width: targetWidth,
-                height: targetHeight,
-                useCORS: true, 
-                backgroundColor: '#ffffff',
-                logging: false
-            });
-            
-            const certNo = extractCertNumber();
-            const currentDate = new Date().toISOString().split('T')[0];
-            const fileName = `${certNo}_Certificate_${currentDate}.${format}`;
-            const mimeType = format === 'jpeg' || format === 'jpg' ? 'image/jpeg' : 'image/png';
-            
-            canvas.toBlob(async (blob) => {
-                if (!blob) throw new Error("Canvas rendering failed");
+    <!-- AI ADVISOR MODAL (Same as before) -->
+    <div id="advisor-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex-col justify-center items-center opacity-100 p-6 transition-opacity">
+        <div class="bg-gray-800 w-full max-w-md rounded-[2rem] p-8 shadow-[0_0_40px_rgba(168,85,247,0.2)] border border-purple-900/50">
+            <div class="flex justify-between items-center mb-6"><div class="flex items-center space-x-2"><i class="ph-fill ph-robot text-3xl text-purple-400"></i><h3 class="text-xl font-bold text-white">AI सलाहकार</h3></div><button id="close-advisor-btn" class="text-gray-400 hover:text-white transition"><i class="ph ph-x text-2xl"></i></button></div>
+            <select id="purchase-type" class="w-full bg-gray-900 text-white px-4 py-4 rounded-xl border border-gray-700 outline-none focus:border-purple-500 mb-6 transition"><option value="Car">🚗 नयी गाड़ी (Car)</option><option value="Home">🏠 नया घर (Home)</option><option value="Gadget">📱 गैजेट / शौक</option></select>
+            <button id="run-advisor-btn" class="w-full bg-purple-500 hover:bg-purple-400 text-white font-extrabold py-4 rounded-xl transition shadow-lg shadow-purple-500/30">चेक करें (Reality Check)</button>
+            <div id="advisor-result" class="mt-6 hidden bg-gray-900 p-5 rounded-2xl border border-gray-700"><h4 id="adv-title" class="font-bold text-lg mb-2"></h4><p id="adv-desc" class="text-sm text-gray-300 mb-3"></p><div class="bg-gray-800 p-3 rounded-xl"><p class="text-xs text-gray-400">आपका सुरक्षित बजट:</p><p id="adv-budget" class="text-2xl font-bold text-emerald-400">₹0</p></div></div>
+        </div>
+    </div>
 
-                if (window.showSaveFilePicker) {
-                    try {
-                        const fileHandle = await window.showSaveFilePicker({
-                            suggestedName: fileName,
-                            types: [{
-                                description: 'Image File',
-                                accept: {[mimeType]: [`.${format}`]},
-                            }],
-                        });
-                        const writable = await fileHandle.createWritable();
-                        await writable.write(blob);
-                        await writable.close();
-                        window.showToast("Image saved perfectly to your selected folder!");
-                    } catch (err) {
-                        if (err.name !== 'AbortError') {
-                            console.warn("File Picker failed, using default download", err);
-                            fallbackDownload(blob, fileName);
-                        }
-                    }
-                } else {
-                    fallbackDownload(blob, fileName);
-                }
-            }, mimeType, format === 'jpeg' ? 1.0 : undefined);
-            
-        } catch (error) {
-            console.error(error);
-            window.showToast("Error while rendering image.", true);
-        } finally {
-            wrapperElement.style.transform = originalTransform;
-            cardElement.classList.remove('exporting');
-        }
-    };
+    <!-- Loading Overlay for Drive Sync -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900/90 z-[200] hidden flex-col justify-center items-center">
+        <i class="ph ph-spinner-gap text-5xl text-blue-500 animate-spin mb-4"></i>
+        <p id="loading-text" class="text-white font-bold tracking-widest">DRIVE SYNCING...</p>
+    </div>
 
-    function fallbackDownload(blob, fileName) {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = fileName;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        window.showToast("Image saved perfectly!");
-    }
-
-    window.shareCard = async function() {
-        if (!navigator.share) {
-            window.showToast("Aapka browser Web Share API support nahi karta. Kripya Save as PNG karein.", true);
-            return;
-        }
-
-        const wrapperElement = document.getElementById('cardWrapper');
-        const cardElement = document.getElementById('card');
-        
-        if(activeElement) { activeElement.classList.remove('active-element'); activeElement = null; buildPropertiesPanel(); }
-        cardElement.classList.add('exporting');
-        
-        const originalTransform = wrapperElement.style.transform;
-        wrapperElement.style.transform = 'scale(1)';
-        await new Promise(resolve => setTimeout(resolve, 50));
-        
-        try {
-            const targetWidth = isLandscape ? 1004 : 650;
-            const targetHeight = isLandscape ? 650 : 1004;
-
-            const canvas = await html2canvas(cardElement, { 
-                scale: 4, 
-                width: targetWidth,
-                height: targetHeight,
-                useCORS: true, 
-                backgroundColor: '#ffffff',
-                logging: false
-            });
-            
-            canvas.toBlob(async (blob) => {
-                const file = new File([blob], 'Certificate.png', { type: 'image/png' });
-                try {
-                    await navigator.share({
-                        title: 'Jewellery XRF Certificate',
-                        text: 'Purity Certificate generated securely.',
-                        files: [file]
-                    });
-                } catch (shareErr) {
-                    console.log("User cancelled sharing.", shareErr);
-                }
-            }, 'image/png');
-            
-        } catch (error) {
-            window.showToast("Share karne mein error aayi.", true);
-        } finally {
-            wrapperElement.style.transform = originalTransform;
-            cardElement.classList.remove('exporting');
-        }
-    };
-
-    document.addEventListener('DOMContentLoaded', () => {
-        initInteract();
-        window.updateCanvasScale();
-        
-        const qrElement = document.getElementById('qrcode');
-        if(qrElement) {
-            setTimeout(() => { 
-                window.autoSyncQR();
-                window.saveState(); 
-            }, 300);
-        } else {
-            window.saveState();
-        }
-        
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then((registration) => {
-                        console.log('Service Worker registered successfully!', registration.scope);
-                    })
-                    .catch((error) => {
-                        console.log('Service Worker registration failed:', error);
-                    });
-            });
-        }
-    });
-
-</script>
+    <script src="app.js"></script>
 </body>
 </html>
